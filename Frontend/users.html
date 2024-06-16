@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Page</title>
+    <link rel="icon" href="favicon/heart.png" type="image/x-icon">
+    <link rel="stylesheet" href="css\users.css">
+    <link href="https://acdevs.github.io/fontawesome/css/fontawesome.css" rel="stylesheet">
+    <link href="https://acdevs.github.io/fontawesome/css/all.css" rel="stylesheet">
+</head>
+<body>
+    <div class="wrapper">
+      <div class="profile-card js-profile-card">
+        <div class="profile-card__img">
+          <img id="user-photo">
+          <div class="upload-btn">
+            <form enctype="multipart/form-data">
+              <input type="file" id="photo" name="photo" accept="image/*" class="inputfile">
+              <label for="photo">+</label>
+            </form>
+          </div>
+          <div class="upload-loader"></div>
+        </div>
+  
+        <div class="profile-card__cnt js-profile-cnt">
+          <div class="profile-card__name">
+            <strong><span id="user-name"></span></strong>
+          </div>
+          <div class="profile-card__txt">Roll No.
+            <span id="user-rollNo"></span>
+          </div>
+          <div class="profile-card__txt">Email.
+            <span id="user-email"></span>
+          </div>
+          <div class="profile-card__txt"><i>of </i>
+            <span id="user-branch"></span>
+          </div>
+          <div class="profile-card__txt user-instagram-txt social-btns">
+            <a id="user-instagram" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+          </div>
+          <div class="profile-card__txt user-snapchat-txt social-btns"> 
+            <a id="user-snapchat" target="_blank"><i class="fa-brands fa-snapchat"></i></a>
+          </div>
+          <div class="profile-card__txt user-popularity-txt" id="user-popularity">
+          </div>
+          
+          <div class="profile-card-off no-match-info">
+          </div>
+
+          <div class="profile-card-inf match-info">
+            <div class="crush-profile-card__img">
+              <img id="crush-photo">
+            </div>
+            <div class="crush-details">
+              <div class="profile-card__name">
+                <strong><span id="matched-name"></span></strong>
+              </div>
+              <div class="profile-card__txt">Roll No.
+                <span id="matched-rollNo"></span>
+              </div>
+              <div class="profile-card__txt">Email.
+                <span id="matched-email"></span>
+              </div>
+              <div class="profile-card__txt"><i>of </i>
+                <span id="matched-branch"></span>
+              </div>
+              <div class="profile-card__txt match-instagram-txt social-btns">
+                <a id="matched-instagram" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+              </div>
+              <div class="profile-card__txt match-snapchat-txt social-btns"> 
+                <a id="matched-snapchat" target="_blank"><i class="fa-brands fa-snapchat"></i></a>
+              </div>
+            </div>
+          </div>
+    
+          <div class="profile-card-ctr">
+            <button class="profile-card__button button--orange" onclick="redirectToPage()">Home</button>
+          </div>
+        </div>
+      </div>
+    </div>
+      
+ <script>
+    document.getElementById('photo').addEventListener('change', (e) => {
+    e.preventDefault();
+    const previewImage = document.getElementById('user-photo');
+    const fileInput = document.getElementById('photo');
+    const loader = document.querySelector('.upload-loader');
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        loader.classList.add('upload-loader-active');
+        previewImage.style.display = 'block';
+        previewImage.src = e.target.result;
+        const formData = new FormData();
+        formData.append('photo', file);
+        fetch("https://a605-20-193-147-51.ngrok-free.app/users/upload_photo", {
+          method: "POST",
+          headers: {
+            'ngrok-skip-browser-warning': 'true',
+            "Authorization": JSON.parse(localStorage.getItem('token'))
+          },
+          body: formData
+        })
+        .then((res) => {
+            loader.classList.remove('upload-loader-active')
+        })
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewImage.style.display = 'none';
+      previewImage.src = '';
+    }
+  });
+
+  function redirectToPage(){
+    window.location = "index.html";
+  }
+
+  const toTitleCase = (str) => {
+    if(!str) return;
+    return str.replace(
+      /\w\S*/g,
+      function(txt) {
+        return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      }
+    );
+  }
+
+  const hydrateMe = () => {
+    fetch('https://a605-20-193-147-51.ngrok-free.app/users',
+    {
+      method: 'GET',
+      headers: {
+        'ngrok-skip-browser-warning': 'true',
+        'Content-Type': 'application/json',
+        'Authorization': JSON.parse(localStorage.getItem('token'))
+      }
+    })
+    .then(async (res) => {
+      if (res.status === 200) {
+        const user = await res.json();
+        populateUser(user);
+        if(user.photo) {
+          fetchAndDisplayImage(user.photo, 'user-photo');
+          document.querySelector('.upload-btn').style.display = 'none';
+        }
+      }
+    })
+  }
+
+  const populateUser = (user) => {
+    document.getElementById('user-name').innerText = toTitleCase(user.name);
+    document.getElementById('user-rollNo').innerText = user.rollNo;
+    document.getElementById('user-branch').innerText = user.branch.toUpperCase();
+    document.getElementById('user-email').innerText = user.email;
+    if(user.instagram_username){
+      document.getElementById('user-instagram').href = `https://instagram.com/${user.instagram_username}/`;
+    }else{
+      document.querySelector('.user-instagram-txt').style.display = 'none';
+    }
+    if(user.snapchat_username){
+      document.getElementById('user-snapchat').href = `https://snapchat.com/add/${user.snapchat_username}/`;
+    }else{
+      document.querySelector('.user-snapchat-txt').style.display = 'none';
+    }
+    if(user.popularity > 0){
+      let text = (user.popularity != 1) ? `You appeared as crush ${user.popularity} times.` : `You appeared as someone's crush`;
+      document.getElementById('user-popularity').innerHTML = text;
+    }else{
+      document.querySelector('.user-popularity-txt').style.display = 'none';
+    }
+  }
+
+  const getCrush = async () => {
+    fetch('https://a605-20-193-147-51.ngrok-free.app/users/match',
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
+        'Authorization': JSON.parse(localStorage.getItem('token'))
+      }
+    })
+    .then(async (res) => {
+      if (res.status === 200) {
+        const match = await res.json();
+        document.querySelector('.match-info').style.display = 'flex';
+        document.getElementById('matched-name').innerText = toTitleCase(match.name);
+        document.getElementById('matched-rollNo').innerText = match.rollNo;
+        document.getElementById('matched-branch').innerText = match.branch.toUpperCase();
+        document.getElementById('matched-email').innerText = match.email;
+        if(match.instagram_username){
+          document.getElementById('matched-instagram').href = `https://instagram.com/${match.instagram_username}/`;
+        }else{
+          document.querySelector('.match-instagram-txt').style.display = 'none';
+        }
+        if(match.snapchat_username){
+          document.getElementById('matched-snapchat').href = `https://snapchat.com/add/${match.snapchat_username}/`;
+        }else{
+          document.querySelector('.match-snapchat-txt').style.display = 'none';
+        }
+        if(match.photo) fetchAndDisplayImage(match.photo, 'crush-photo');
+      }
+      else{
+        const error = await res.json();
+        document.querySelector('.no-match-info').style.display = 'flex';
+        document.querySelector('.no-match-info').innerText = `*${error.message}`;
+      }
+    })
+    .catch((err) => {
+      document.querySelector('.match-info').innerText = err.message;
+    });
+  }
+
+  function fetchAndDisplayImage(imageName, imageElementId) {
+    fetch(`https://a605-20-193-147-51.ngrok-free.app/usercontent/${imageName}`, { method: 'GET', headers: { 'ngrok-skip-browser-warning': 'true' } })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        const imageUrl = URL.createObjectURL(blob);
+        const imgElement = document.getElementById(imageElementId);
+        imgElement.src = imageUrl;
+      })
+      .catch(error => {
+        console.error('There was a problem loading the image');
+      });
+  }
+
+  hydrateMe();
+  getCrush();
+</script>
+</body>
+</html>
